@@ -1,0 +1,284 @@
+<?php
+
+function corporate_barefoot_challenge() { // Corporate Barefoot Challenge Form
+    drupal_add_js(drupal_get_path('module', 'corporate_barefoot') . '/corporate_barefoot.js', 'theme');
+    $content = drupal_get_form('corporate_barefoot_form');
+    return $content;
+}
+
+function corporate_barefoot_challenge_top() { //Top 
+
+    $limit_count = check_plain(variable_get('challenge_list_count', ''));
+
+    $result_corporate = db_query("SELECT count(distinct {node}.nid) AS total_member, {node_data_field_company}.field_company_value AS company_name, {node}.type AS node_type FROM {node} {node} 
+                                  LEFT JOIN {content_type_corporate_barefoot} {node_data_field_company} ON {node}.vid = {node_data_field_company}.vid
+                                  WHERE ({node}.type in ('corporate_barefoot') and {node_data_field_company}.field_company_value != '* Remove') group by trim({node_data_field_company}.field_company_value) order by total_member desc limit %d", $limit_count);
+    $i = 0;
+    $top_value = '';
+    while ($corporate_stats = db_fetch_object($result_corporate)) {
+        if($i == 0) $top_value = $corporate_stats->total_member;
+        $content .= '<div style="width:510px;">';
+	    $content .= '<div style="width:' . round($corporate_stats->total_member*100/$top_value) . '%;height:24px;background: url(/sites/all/themes/odws/images/challenge/challenge-bar.png) -30px 0 repeat-x;margin:20px"><span style="display:block;position:absolute;">' . $corporate_stats->company_name . ' | <span style=\'font:normal 500 20px "ff-market-web-1", "ff-market-web-2",sans-serif;\'>' . $corporate_stats->total_member . '</span></span></div>';
+        $content .= '</div>';
+        $i++;
+	}
+    return $content;
+}
+
+function corporate_barefoot_content() { //stats
+
+    $content .= '<h3>Corporate Barefoot Challenge Stats</h3><dl class="graph">';
+
+    $result_corporate = db_query("SELECT count(distinct {node}.nid) AS total_member, {node_data_field_company}.field_company_value AS company_name, {node}.type AS node_type FROM {node} {node} 
+                                  LEFT JOIN {content_type_corporate_barefoot} {node_data_field_company} ON {node}.vid = {node_data_field_company}.vid
+                                  WHERE ({node}.type in ('corporate_barefoot')) group by trim({node_data_field_company}.field_company_value) order by total_member desc");
+    $i = 0;
+    $top_value = '';
+    while ($corporate_stats = db_fetch_object($result_corporate)) {
+        if($i == 0) $top_value = $corporate_stats->total_member;
+        $content .= '<dt class="bar-title">' . $corporate_stats->company_name . '</dt><dd class="bar-container">';
+        $content .= '<div style="width: ' . round($corporate_stats->total_member*100/$top_value) . '%; background-color: #b6d5dc;"><span style="display:none">' . round($corporate_stats->total_member*100/$top_value) . '%</span><span style="color:#847a66">' . $corporate_stats->total_member . ' people</span></div></dd>';
+        $i++;
+	}
+    $content .= '</dl>';
+    return $content;
+}
+
+function corporate_barefoot_menu()
+{
+	$items = array();
+	$items['barefoot-challenge-stats'] = array('title'=>'Corporate Barefoot Challenge', 'page callback'=>'corporate_barefoot_content', 'access arguments'=>array('access content'), 'type'=>MENU_CALLBACK);
+	$items['barefoot-challenge-company'] = array('title'=>'Corporate Barefoot Challenge', 'page callback'=>'corporate_barefoot_company', 'access arguments'=>array('access administration pages'), 'type'=>MENU_CALLBACK);
+
+    $items['admin/settings/challenge'] = array(
+    'title' => t('Corporate Barefoot Challenge'),
+    'description' => t('Administer settings related to the Corporate Barefoot Challenge.'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('corporate_barefoot_admin_settings'),
+    'access arguments' => array('administer challenge list count'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+    $items['challenge/autocomplete'] = array(
+      'title' => 'Autocomplete for company',
+      'page callback' => '_company_autocomplete',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK
+    );
+
+    return $items;
+}
+
+function corporate_barefoot_form() {
+
+    $form['email'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#prefix' => '<tr><td colspan=2>',
+    '#suffix' => '</td></tr>',
+    '#default_value' => 'Email address',
+    ); 
+
+    $form['company'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#prefix' => '<tr><td colspan=2>',
+    '#suffix' => '',
+    '#default_value' => 'Company name',
+    '#autocomplete_path' => 'challenge/autocomplete',
+    ); 
+    $form['over18'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('I agree to the Terms & Conditions'),
+    '#required' => TRUE,
+    '#default_value' => 0,
+    '#prefix' => '<tr><td colspan=2>',
+    '#suffix' => '</td></tr>',
+        '#validate' => 'corporate_barefoot_form_validate_custom',
+    );
+    $form['submit'] = array(
+    '#type'  => 'image_button',
+    '#src' => 'sites/all/themes/odws/images/challenge-submit.jpg',
+    '#prefix' => '',
+    '#suffix' => '</td></tr></table>',
+    );
+
+    $form['#redirect'] = 'challenge';
+ 
+    return $form;
+}
+
+function corporate_barefoot_form_submit($form_id, $form) {
+    global $user;
+    $form_id = 'corporate_barefoot_node_form';
+    $node = array(
+        'uid'  => $user->uid,
+        'name' => $user->name,
+        'type' => 'corporate_barefoot',
+    );
+
+    // save to node type "corporate_barefoot"
+    $form_state = array();
+    module_load_include('inc', 'node', 'node.pages');
+    $form_state['values']['title'] = 'corporate barefoot challenge submitted.';
+
+    $form_state['values']['field_firstname'][0]['value']  = trim($form['values']['firstname']);
+    $form_state['values']['field_lastname'][0]['value']  = trim($form['values']['lastname']);
+    $form_state['values']['field_email_address'][0]['value']  = trim($form['values']['email']);
+    $form_state['values']['field_company'][0]['value']  = trim($form['values']['company']);
+
+    $form_state['values']['name'] = $user->name;
+    $form_state['values']['op'] = t('Save');
+
+    drupal_execute($form_id, $form_state, $node);
+
+    //$mailto = trim($form['values']['email']);
+    //drupal_mail('corporate_barefoot', 'new_challenge_creation', $mailto, user_preferred_language($user, 'en'), $params);
+
+} 
+/**
+ * Implementation of hook_mail()
+ */
+function corporate_barefoot_mail($key, &$message, &$params) {
+  switch ($key) {
+    case 'new_challenge_creation':
+    $template_key = $key;
+    $template = corporate_barefoot_mail_template_load($template_key);
+
+    $message['subject'] = $template['subject'];
+    $message['body'] = $template['body'];
+
+    // token replace
+    $message['body'] = token_replace($message['body'], 'node', $node);
+    break;  
+  }
+}
+
+function corporate_barefoot_mail_template_load($template_key) {
+  $result = db_query("SELECT * FROM {toms_mail_templates} WHERE template_key='%s'", $template_key);
+
+  return db_fetch_array($result);
+}
+
+function corporate_barefoot_admin_settings() {
+  $form['corporate_barefoot'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Corporate Barefoot Challenge'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE
+  );
+  $form['corporate_barefoot']['challenge_list_count'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Challenge List Count'),
+    '#description' => t('Number only'),
+   '#default_value' => variable_get('challenge_list_count', ''),
+  );
+  $form['corporate_barefoot']['challenge_company_list'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Challenge Company List'),
+    '#description' => t('test'),
+   '#default_value' => variable_get('challenge_company_list', ''),
+  );
+  return system_settings_form($form);
+}
+
+function corporate_barefoot_company_form() {
+    $result_corporate = db_query("SELECT count(distinct {node}.nid) AS total_member, {node_data_field_company}.field_company_value AS company_name, {node}.type AS node_type FROM {node} {node} 
+                                  LEFT JOIN {content_type_corporate_barefoot} {node_data_field_company} ON {node}.vid = {node_data_field_company}.vid
+                                  WHERE ({node}.type in ('corporate_barefoot')) group by trim({node_data_field_company}.field_company_value) order by company_name asc");
+
+    while ($corporate_stats = db_fetch_object($result_corporate)) {
+        $key_values[$corporate_stats->company_name] = $corporate_stats->company_name;
+	}
+
+    $form['company'] = array(
+        '#type' => 'select',
+        '#title' => t('Change From'),
+        '#options' => $key_values,
+        '#required' => TRUE,
+        '#prefix' => '<table><tr><td>',
+        '#suffix' => '</td>',
+    );
+    
+    $form['company2'] = array(
+        '#type' => 'select',
+        '#title' => t('To'),
+        '#options' => $key_values,
+        '#required' => TRUE,
+        '#prefix' => '<td>',
+        '#suffix' => '</td>',
+    );
+    
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#prefix' => '<td>',
+        '#suffix' => '</td></tr></table>',
+        '#value' => t('Update'),
+    );
+    return $form;
+}
+
+function corporate_barefoot_company_form_submit($form_id, $form) {
+
+    db_query("UPDATE {content_type_corporate_barefoot} SET field_company_value = '%s' WHERE field_company_value = '%s'", trim($form['values']['company2']), trim($form['values']['company']));
+
+    drupal_set_message(t('Successfully Updated!'));
+
+} 
+
+function corporate_barefoot_company() { //manage company name
+
+    $limit_count = check_plain(variable_get('challenge_list_count', ''));
+
+    $content .= '<h3>Corporate Barefoot Challenge Manage Company Name</h3>';
+    $content .= drupal_get_form('corporate_barefoot_company_form');
+    
+    $content .= '<div>Top '. $limit_count . '</div><dl class="graph" style="float:left;width:300px">';
+
+    $result_corporate = db_query("SELECT count(distinct {node}.nid) AS total_member, {node_data_field_company}.field_company_value AS company_name, {node}.type AS node_type FROM {node} {node} 
+                                  LEFT JOIN {content_type_corporate_barefoot} {node_data_field_company} ON {node}.vid = {node_data_field_company}.vid
+                                  WHERE ({node}.type in ('corporate_barefoot') and {node_data_field_company}.field_company_value != '* Remove') group by trim({node_data_field_company}.field_company_value) order by total_member desc limit %d", $limit_count);
+
+    while ($corporate_stats = db_fetch_object($result_corporate)) {
+        $content .= '<dt style="width:200px">' . $corporate_stats->company_name . '</dt><dd style="display:inline">';
+        $content .= '<span style="color:#847a66">' . $corporate_stats->total_member . ' people</span></dd>';
+	}
+    $content .= '</dl>';
+
+    $result_corporate = db_query("SELECT count(distinct {node}.nid) AS total_member, {node_data_field_company}.field_company_value AS company_name, {node}.type AS node_type FROM {node} {node} 
+                                  LEFT JOIN {content_type_corporate_barefoot} {node_data_field_company} ON {node}.vid = {node_data_field_company}.vid
+                                  WHERE ({node}.type in ('corporate_barefoot')) group by trim({node_data_field_company}.field_company_value) order by company_name asc");
+    while ($corporate_stats = db_fetch_object($result_corporate)) {
+        $content .= '<dt class="bar-title" style="width:400px">' . $corporate_stats->company_name . '</dt><dd class="bar-container" style="width:200px">';
+        $content .= '<span style="color:#847a66">' . $corporate_stats->total_member . ' people</span></dd>';
+	}
+    return $content;
+}
+
+function _company_autocomplete($string) {
+    $matches = array();
+    $result = db_query_range("SELECT name FROM {term_data} WHERE (vid = %d) and (name LIKE '%%%s%')", 1, $string, 0, 10);
+
+    $array_company = explode("\n",variable_get('challenge_company_list', ''));
+
+    $count = 0;
+    asort($array_company);
+
+    foreach ($array_company as $key => $value) { 
+        if(preg_match("/".$string."/i", $value) > 0){
+            $matches[$value] = check_plain($value);
+            $count++;
+            if($count == 10) break;
+        }
+    } 
+    // return for JS
+    print drupal_to_js($matches);
+    exit();
+}
+
+function corporate_barefoot_form_validate_custom($form, &$form_state) {
+    $legal = $form_state['values']['over18'];   
+    if ($legal===0) {
+        form_set_error('over18', 'Please check the agreement.');
+    }
+}

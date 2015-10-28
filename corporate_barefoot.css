@@ -1,0 +1,110 @@
+#leading {
+	background: url(/sites/all/themes/odws/images/home-slide-bg.jpg) no-repeat;
+    height:400px;
+    width:646px;
+}
+
+#graphs {
+	background: url(/sites/all/themes/odws/images/leading-bg.jpg) no-repeat;
+	height: 400px;
+}
+
+#graphs p {
+	color: #2d2d2d;
+	font-size: 16px;
+	margin-top: 40px;
+	padding: 20px;
+}
+
+.page-challenge .messages {
+    display:none;		
+}
+
+.page-challenge form tbody {
+    border-top: none;
+}
+
+.page-challenge .form-item {
+    margin:0;
+}
+
+.page-challenge .form-text {
+    margin:0;
+    color:#8e8e8e;
+    height: 24px;
+    line-height: 24px;	
+}	
+#corporate-barefoot-form #edit-submit {
+    float: right;
+    width: 81px;
+}
+	
+#corporate-barefoot-form #edit-company-wrapper {
+    display:inline;
+}
+
+#corporate-barefoot-form #formTable {
+    width:275px;
+    height:110px;
+    margin: 0;
+}
+
+#corporate-barefoot-form #edit-firstname {
+    width:132px;
+}
+    
+#corporate-barefoot-form #edit-lastname {
+    width:132px;
+    float: right;
+}
+
+#corporate-barefoot-form #edit-email {
+    width:275px;
+}
+    	
+#corporate-barefoot-form #edit-company {
+    width:186px;
+}
+
+
+.page-barefoot-challenge .status, .page-barefoot-challenge .error {
+    display:none;		
+}
+
+.graph {
+	padding-left: 50px;
+	padding-top: 12px;
+}
+
+/*.graph>dt:first-child+dd {
+    margin:4px 0;
+}
+*/
+.bar-title {
+	border-right: 1px solid #d7d3c8;
+	clear: left;
+	color: #3d3b37;
+	font: bold 15px Arial, Helvetica, sans-serif;	
+	float: left;
+	padding: 8px 0;
+    position: relative;
+    top: -5px;	
+	width: 120px;
+}
+.bar-container {
+	float: left;
+	margin-left: 0;
+	width: 307px;
+}
+.bar-container div {
+	background-color: rgb(182, 213, 220); 
+	height: 24px;
+	position: relative;		
+}
+.bar-container div span {
+	color: #847a67;
+	font: 15px "john-doe-1","john-doe-2",serif;
+	position: absolute;
+	right: -82px;
+	top: 3px;	
+}

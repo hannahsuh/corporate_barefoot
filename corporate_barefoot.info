@@ -1,0 +1,4 @@
+; $Id$
+name = Corporate Barefoot Challenge
+description = Corporate Barefoot Challenge for ODWS
+core = 6.x
